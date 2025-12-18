@@ -9,72 +9,49 @@ using VaultGuard.Domain.ValueObjects;
 
 namespace VaultGuard.Application.Features.VaultItems.Commands;
 
-public sealed class CreateVaultItemCommandHandler : IRequestHandler<CreateVaultItemCommand, VaultItemDto>
+public sealed class CreateVaultItemCommandHandler(
+    IVaultRepository vaultRepository,
+    IAuditLogRepository auditLogRepository,
+    IUnitOfWork unitOfWork,
+    ICurrentUserService currentUserService,
+    ICacheService cacheService,
+    ILogger<CreateVaultItemCommandHandler> logger) : IRequestHandler<CreateVaultItemCommand, VaultItemDto>
 {
-    private readonly IVaultRepository _vaultRepository;
-    private readonly IAuditLogRepository _auditLogRepository;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ICurrentUserService _currentUserService;
-    private readonly ICacheService _cacheService;
-    private readonly ILogger<CreateVaultItemCommandHandler> _logger;
-
-    public CreateVaultItemCommandHandler(
-        IVaultRepository vaultRepository,
-        IAuditLogRepository auditLogRepository,
-        IUnitOfWork unitOfWork,
-        ICurrentUserService currentUserService,
-        ICacheService cacheService,
-        ILogger<CreateVaultItemCommandHandler> logger)
-    {
-        _vaultRepository = vaultRepository;
-        _auditLogRepository = auditLogRepository;
-        _unitOfWork = unitOfWork;
-        _currentUserService = currentUserService;
-        _cacheService = cacheService;
-        _logger = logger;
-    }
-
     public async Task<VaultItemDto> Handle(CreateVaultItemCommand request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Creating vault item in vault {VaultId} for user {UserId}", 
-            request.VaultId, _currentUserService.UserId);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Creating vault item in vault {VaultId} for user {UserId}", request.VaultId, currentUserService.UserId);
+        }
 
         // Get vault from write database
-        var vault = await _vaultRepository.GetByIdAsync(request.VaultId, cancellationToken)
-            ?? throw new UnauthorizedAccessException("Vault not found");
+        var vault = await vaultRepository.GetByIdAsync(request.VaultId, cancellationToken) ?? throw new UnauthorizedAccessException("Vault not found");
 
         // Ensure user owns the vault
-        vault.EnsureOwnership(_currentUserService.UserId);
+        vault.EnsureOwnership(currentUserService.UserId);
 
         // Create encrypted payload value object
-        var encryptedPayload = EncryptedData.Create(
-            request.EncryptedPayloadCipherText,
-            request.EncryptedPayloadIV);
+        var encryptedPayload = EncryptedData.Create( request.EncryptedPayloadCipherText, request.EncryptedPayloadIV);
 
         // Add item to vault (domain logic)
         var vaultItem = vault.AddItem(request.Type, encryptedPayload, request.Metadata);
 
         // Update vault
-        _vaultRepository.Update(vault);
+        vaultRepository.Update(vault);
 
         // Create audit log
-        var auditLog = AuditLog.Create(
-            _currentUserService.UserId,
-            AuditAction.VaultItemCreated,
-            $"Item created in vault {vault.Name}",
-            _currentUserService.IpAddress,
-            _currentUserService.UserAgent);
-
-        await _auditLogRepository.AddAsync(auditLog, cancellationToken);
+        var auditLog = AuditLog.Create(currentUserService.UserId, AuditAction.VaultItemCreated, $"Item created in vault {vault.Name}", currentUserService.IpAddress, currentUserService.UserAgent);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
 
         // Commit transaction
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Invalidate cache
-        await _cacheService.RemoveByPrefixAsync($"vault:{request.VaultId}", cancellationToken);
-        await _cacheService.RemoveByPrefixAsync($"vaults:{_currentUserService.UserId}", cancellationToken);
+        await cacheService.RemoveByPrefixAsync($"vault:{request.VaultId}", cancellationToken);
+        await cacheService.RemoveByPrefixAsync($"vaults:{currentUserService.UserId}", cancellationToken);
 
-        _logger.LogInformation("Vault item {ItemId} created successfully", vaultItem.Id);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Vault item {ItemId} created successfully", vaultItem.Id);
 
         return new VaultItemDto
         {

@@ -33,11 +33,17 @@ public sealed class GetVaultsQueryHandler : IRequestHandler<GetVaultsQuery, IEnu
         var cachedVaults = await _cacheService.GetAsync<List<VaultDto>>(cacheKey, cancellationToken);
         if (cachedVaults != null)
         {
-            _logger.LogInformation("Returning vaults from cache for user {UserId}", _currentUserService.UserId);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Returning vaults from cache for user {UserId}", _currentUserService.UserId);
+            }
             return cachedVaults;
         }
 
-        _logger.LogInformation("Getting vaults from database for user {UserId}", _currentUserService.UserId);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Getting vaults from database for user {UserId}", _currentUserService.UserId);
+        }
 
         // Get from read database
         var vaults = await _vaultRepository.GetByOwnerIdAsync(_currentUserService.UserId, cancellationToken);

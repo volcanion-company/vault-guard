@@ -93,6 +93,23 @@ public sealed class AuditLogTests
     }
 
     [Fact]
+    public void PrivateConstructor_ShouldBeCallableViaReflection()
+    {
+        // Arrange
+        var constructor = typeof(AuditLog).GetConstructor(
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+            null,
+            Type.EmptyTypes,
+            null);
+
+        // Act
+        var auditLog = constructor?.Invoke(null) as AuditLog;
+
+        // Assert
+        auditLog.Should().NotBeNull();
+    }
+
+    [Fact]
     public void Create_ShouldStoreMetadataAsJson()
     {
         // Arrange

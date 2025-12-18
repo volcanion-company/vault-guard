@@ -36,7 +36,10 @@ public sealed class CreateVaultCommandHandler : IRequestHandler<CreateVaultComma
 
     public async Task<VaultDto> Handle(CreateVaultCommand request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Creating vault for user {UserId}", _currentUserService.UserId);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Creating vault for user {UserId}", _currentUserService.UserId);
+        }
 
         // Create encrypted vault key value object
         var encryptedVaultKey = EncryptedData.Create(
@@ -68,7 +71,8 @@ public sealed class CreateVaultCommandHandler : IRequestHandler<CreateVaultComma
         // Invalidate cache
         await _cacheService.RemoveByPrefixAsync($"vaults:{_currentUserService.UserId}", cancellationToken);
 
-        _logger.LogInformation("Vault {VaultId} created successfully for user {UserId}", vault.Id, _currentUserService.UserId);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Vault {VaultId} created successfully for user {UserId}", vault.Id, _currentUserService.UserId);
 
         return new VaultDto
         {

@@ -8,6 +8,23 @@ namespace VaultGuard.Domain.Tests.Entities;
 public sealed class UserTests
 {
     [Fact]
+    public void PrivateConstructor_ShouldBeCallableViaReflection()
+    {
+        // Arrange
+        var constructor = typeof(User).GetConstructor(
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+            null,
+            Type.EmptyTypes,
+            null);
+
+        // Act
+        var user = constructor?.Invoke(null) as User;
+
+        // Assert
+        user.Should().NotBeNull();
+    }
+
+    [Fact]
     public void Create_ShouldCreateUser_WhenValidParametersProvided()
     {
         // Arrange

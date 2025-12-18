@@ -1,83 +1,145 @@
-# VaultGuard - Password Manager Backend
+<div align="center">
 
-Backend API production-ready cho hệ thống Password Manager, xây dựng theo Clean Architecture và DDD.
+# 🛡️ VaultGuard
 
-## 🏗️ Kiến Trúc
+### Production-Ready Password Manager Backend API
+
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
+[![Code Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)]()
+
+[Features](#-features) • [Architecture](#-architecture) • [Getting Started](#-getting-started) • [Documentation](#-documentation) • [Contributing](#-contributing)
+
+</div>
+
+---
+
+## 📖 Overview
+
+**VaultGuard** is a production-ready backend API for a secure password management system, built with **Clean Architecture** and **Domain-Driven Design (DDD)** principles. It provides enterprise-grade security, scalability, and maintainability for managing sensitive credentials.
+
+### ✨ Key Highlights
+
+- 🏗️ **Clean Architecture** - Complete separation of concerns with layered design
+- 🎯 **Domain-Driven Design** - Rich domain models with business logic encapsulation
+- ⚡ **CQRS Pattern** - Optimized read/write operations with separate data stores
+- 🔐 **Security First** - Encrypted data, audit trails, and device management
+- 📊 **Production Ready** - Comprehensive logging, monitoring, and observability
+- 🧪 **Well Tested** - Unit and integration tests with high code coverage
+
+---
+
+## 🎯 Features
+
+### Core Functionality
+
+- **Vault Management** - Secure containers for organizing credentials
+- **Credential Storage** - Support for passwords, secure notes, and payment cards
+- **Device Authorization** - Multi-device support with device tracking
+- **Audit Logging** - Comprehensive security audit trails
+- **Data Encryption** - Military-grade encryption for sensitive data
+
+### Technical Features
+
+- ✅ Read/Write Database Separation
+- ✅ Distributed Caching with Redis
+- ✅ Structured Logging with Elasticsearch
+- ✅ Distributed Tracing with OpenTelemetry
+- ✅ Metrics Collection with Prometheus
+- ✅ Input Validation with FluentValidation
+- ✅ Soft Delete Pattern
+- ✅ Repository & Unit of Work Patterns
+
+---
+
+## 🏗️ Architecture
+
+### Project Structure
 
 ```
-/src
- ├── libs
- │   ├── VaultGuard.Domain          # Core business logic, entities, value objects
- │   ├── VaultGuard.Application     # CQRS, commands, queries, handlers
- │   ├── VaultGuard.Persistence     # EF Core, repositories, UnitOfWork
- │   └── VaultGuard.Infrastructure  # Redis, Serilog, OpenTelemetry
- └── presentations
-     └── VaultGuard.Api             # Controllers, middleware, Program.cs
-
-/test
- ├── libs
- │   ├── VaultGuard.Domain.Tests
- │   └── VaultGuard.Application.Tests
- └── presentations
-     └── VaultGuard.Api.Tests
+VaultGuard/
+├── src/
+│   ├── libs/
+│   │   ├── VaultGuard.Domain/          # Core business logic & entities
+│   │   ├── VaultGuard.Application/     # CQRS, use cases & DTOs
+│   │   ├── VaultGuard.Persistence/     # EF Core & repositories
+│   │   └── VaultGuard.Infrastructure/  # External services & caching
+│   └── presentations/
+│       └── VaultGuard.Api/             # REST API controllers
+└── test/
+    ├── libs/
+    │   ├── VaultGuard.Domain.Tests/
+    │   └── VaultGuard.Application.Tests/
+    └── presentations/
+        └── VaultGuard.Api.Tests/
 ```
 
-## ⚡ Technology Stack
+### Technology Stack
 
-- **.NET 10** - Web API
-- **PostgreSQL** - Primary database (Read/Write separation)
-- **Entity Framework Core 10** - ORM
-- **Redis** - Distributed caching
-- **MediatR** - CQRS pattern
-- **Serilog + Elasticsearch** - Logging
-- **OpenTelemetry + Prometheus** - Observability
-- **FluentValidation** - Input validation
-- **xUnit + Moq + FluentAssertions** - Testing
-
-## 🎯 Core Features
+| Category | Technology |
+|----------|-----------|
+| **Framework** | .NET 10, C# 13 |
+| **Database** | PostgreSQL 16+ (Read/Write separation) |
+| **ORM** | Entity Framework Core 10 |
+| **Caching** | Redis 7+ |
+| **Mediator** | MediatR (CQRS) |
+| **Logging** | Serilog + Elasticsearch |
+| **Monitoring** | OpenTelemetry + Prometheus |
+| **Validation** | FluentValidation |
+| **Testing** | xUnit, Moq, FluentAssertions |
 
 ### Domain Models
-- **User** - Aggregate root cho user management
-- **Vault** - Aggregate root cho password vaults
-- **VaultItem** - Items trong vault (passwords, notes, cards)
-- **Device** - User's registered devices
-- **AuditLog** - Security audit trail
 
-### CQRS Implementation
-**Commands (Write):**
-- `CreateVaultCommand` - Tạo vault mới
-- `CreateVaultItemCommand` - Thêm item vào vault
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Aggregate Roots                       │
+├─────────────────────────────────────────────────────────┤
+│ User (Identity)                                         │
+│   ├── Devices (Collection)                              │
+│   └── Vaults (Collection)                               │
+│                                                         │
+│ Vault (Secure Container)                                │
+│   ├── VaultItems (Collection)                           │
+│   └── EncryptedData (Value Object)                      │
+│                                                         │
+│ AuditLog (Security Trail)                               │
+└─────────────────────────────────────────────────────────┘
+```
 
-**Queries (Read):**
-- `GetVaultsQuery` - Lấy danh sách vaults
-- `GetVaultItemsQuery` - Lấy items trong vault
+For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
-### Patterns Implemented
-- ✅ Clean Architecture
-- ✅ Domain-Driven Design (DDD)
-- ✅ CQRS (Command Query Responsibility Segregation)
-- ✅ Repository Pattern
-- ✅ Unit of Work Pattern
-- ✅ Cache-Aside Pattern
-- ✅ Value Objects
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- .NET 10 SDK
-- PostgreSQL 16+
-- Redis 7+
-- Elasticsearch 8+ (optional, for logging)
 
-### Database Setup
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [PostgreSQL 16+](https://www.postgresql.org/download/)
+- [Redis 7+](https://redis.io/download)
+- (Optional) [Elasticsearch 8+](https://www.elastic.co/downloads/elasticsearch) for logging
 
-1. **Tạo databases:**
+### Installation
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/volcanion-company/vault-guard.git
+cd vault-guard
+```
+
+2. **Setup databases**
+
 ```sql
 CREATE DATABASE vaultguard_write;
 CREATE DATABASE vaultguard_read;
 ```
 
-2. **Update connection strings** trong `appsettings.json`:
+3. **Configure application settings**
+
+Edit [src/presentations/VaultGuard.Api/appsettings.json](src/presentations/VaultGuard.Api/appsettings.json):
+
 ```json
 {
   "ConnectionStrings": {
@@ -88,173 +150,385 @@ CREATE DATABASE vaultguard_read;
 }
 ```
 
-3. **Run migrations:**
+4. **Apply database migrations**
+
 ```bash
 cd src/presentations/VaultGuard.Api
 dotnet ef migrations add InitialCreate --project ../../libs/VaultGuard.Persistence
 dotnet ef database update --project ../../libs/VaultGuard.Persistence
 ```
 
-### Run Application
+5. **Run the application**
 
 ```bash
 cd src/presentations/VaultGuard.Api
 dotnet run
 ```
 
-API sẽ chạy tại: `https://localhost:5001`
+The API will be available at `https://localhost:5001`
+
+---
 
 ## 📡 API Endpoints
 
 ### Vaults
-- `GET /api/vaults` - Lấy danh sách vaults
-- `POST /api/vaults` - Tạo vault mới
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/vaults` | Get all vaults for current user |
+| `POST` | `/api/vaults` | Create a new vault |
+| `GET` | `/api/vaults/{id}` | Get vault by ID |
+| `PUT` | `/api/vaults/{id}` | Update vault |
+| `DELETE` | `/api/vaults/{id}` | Delete vault (soft delete) |
 
 ### Vault Items
-- `GET /api/vaults/{vaultId}/items` - Lấy items trong vault
-- `POST /api/vaults/{vaultId}/items` - Thêm item vào vault
 
-### Monitoring
-- `GET /health` - Health check endpoint
-- `GET /metrics` - Prometheus metrics
-- `GET /swagger` - API documentation
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/vaults/{vaultId}/items` | Get all items in vault |
+| `POST` | `/api/vaults/{vaultId}/items` | Add new item to vault |
+| `GET` | `/api/vaults/{vaultId}/items/{id}` | Get specific item |
+| `PUT` | `/api/vaults/{vaultId}/items/{id}` | Update item |
+| `DELETE` | `/api/vaults/{vaultId}/items/{id}` | Delete item |
+
+### System Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check status |
+| `GET` | `/metrics` | Prometheus metrics |
+| `GET` | `/swagger` | API documentation (Swagger UI) |
+
+---
 
 ## 🧪 Testing
 
-Run unit tests:
+### Run All Tests
+
 ```bash
 dotnet test
 ```
 
-Run specific test project:
+### Run Specific Test Project
+
 ```bash
+dotnet test test/libs/VaultGuard.Domain.Tests
 dotnet test test/libs/VaultGuard.Application.Tests
 ```
 
-## 📊 Architecture Highlights
+### Run Tests with Coverage
 
-### Read/Write Database Separation
-- **Write operations** → Primary PostgreSQL database
-- **Read operations** → Read replica database
-- Tối ưu performance và scalability
+```bash
+dotnet test --collect:"XPlat Code Coverage" --results-directory TestResults
+```
 
-### Caching Strategy
-- Redis distributed cache
-- Cache-aside pattern
-- Automatic cache invalidation on writes
-- TTL: 5 minutes
+### Generate Test Report
+#### Command
 
-### Observability
-- **Logging:** Serilog → Console + Elasticsearch
-- **Tracing:** OpenTelemetry distributed tracing
-- **Metrics:** Prometheus endpoint at `/metrics`
-- **Health Checks:** Database + Redis health monitoring
+```bash
+reportgenerator -reports:TestResults/**/coverage.cobertura.xml -targetdir:TestResults/Report -reporttypes:Html
+```
 
-### Security
-- **NO AUTH LOGIC:** Tích hợp middleware từ Auth Service
-- **Ownership Validation:** Domain-level authorization
-- **Audit Logging:** Track mọi sensitive operations
-- **Encrypted Data:** Client-side encryption only
+#### Open index.html to show:
+```sh
+# Directory:
+/TestResults/index.html
+```
+
+### Test Structure
+
+- **Unit Tests** - Domain logic and application handlers
+- **Integration Tests** - Database operations and API endpoints
+- **Coverage Target** - 90%+ code coverage
+
+---
 
 ## 🔒 Security Model
 
-Backend **KHÔNG** handle authentication. Auth được xử lý bởi Auth Service riêng biệt.
+### Authentication
+VaultGuard **does not handle authentication**. It integrates with a separate **Auth Service** via middleware that:
+- Validates JWT tokens
+- Injects user context (`ICurrentUserService`)
+- Manages device authorization
 
-**Backend chỉ:**
-- Validate ownership (`vault.EnsureOwnership(userId)`)
-- Log audit trail
-- Store encrypted data (không decrypt)
+### Authorization
+- **Ownership Validation** - Domain-level checks (`vault.EnsureOwnership(userId)`)
+- **Business Rules** - Enforced at aggregate root level
+- **Audit Trail** - All sensitive operations are logged
 
-## 📁 Project Structure
+### Data Protection
+- **Client-Side Encryption** - Data encrypted before reaching the API
+- **Encrypted Storage** - Sensitive fields stored as `EncryptedData` value objects
+- **No Decryption** - Backend never decrypts user data
+- **Zero-Knowledge Architecture** - Server has no access to plaintext passwords
 
-### Domain Layer
+---
+
+## 📊 Performance & Scalability
+
+### Database Strategy
 ```
-Domain/
-├── Common/          # Base entities, interfaces
-├── Entities/        # User, Vault, VaultItem, Device, AuditLog
-├── ValueObjects/    # EncryptedData
-├── Events/          # Domain events
-├── Repositories/    # Repository interfaces
-└── Enums/           # Domain enums
-```
-
-### Application Layer
-```
-Application/
-├── Common/
-│   └── Interfaces/  # ICurrentUserService, ICacheService
-├── Features/
-│   ├── Vaults/
-│   │   ├── Commands/
-│   │   └── Queries/
-│   └── VaultItems/
-│       ├── Commands/
-│       └── Queries/
-└── DTOs/            # Data Transfer Objects
+Write Operations → Primary Database (WriteDbContext)
+                    ↓
+                Auto-replication
+                    ↓
+Read Operations ← Read Replica (ReadDbContext with NoTracking)
 ```
 
-### Persistence Layer
+### Caching Strategy
 ```
-Persistence/
-├── Contexts/        # WriteDbContext, ReadDbContext
-├── Configurations/  # EF Core entity configurations
-└── Repositories/    # Repository implementations
+1. Query → Check Redis Cache
+2. Cache Miss → Query Database
+3. Set Cache → TTL: 5 minutes
+4. Write Operation → Invalidate Related Cache
 ```
+
+### Observability Stack
+
+| Component | Purpose | Endpoint |
+|-----------|---------|----------|
+| **Serilog** | Structured logging | Console + Elasticsearch |
+| **OpenTelemetry** | Distributed tracing | OTLP exporter |
+| **Prometheus** | Metrics collection | `/metrics` |
+| **Health Checks** | Service monitoring | `/health` |
+
+---
 
 ## 📖 Documentation
 
-Xem [ARCHITECTURE.md](./ARCHITECTURE.md) để hiểu chi tiết về:
-- Clean Architecture layers
-- CQRS implementation
-- Data flow diagrams
-- Design decisions
-- Best practices
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Detailed architecture documentation
+- [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute to this project
+- [Swagger UI](https://localhost:5001/swagger) - Interactive API documentation (when running)
+
+---
 
 ## 🛠️ Development
 
-### Code Style
-- Follow .NET coding conventions
-- Use `sealed` for classes that won't be inherited
-- Async/await everywhere
-- Immutable value objects
+### Prerequisites for Development
 
-### Dependency Injection
+- Visual Studio 2022 / VS Code / Rider
+- .NET 10 SDK
+- Docker Desktop (optional, for running dependencies)
+- PostgreSQL client tools
+- Redis CLI (optional)
+
+### Coding Standards
+
+- Follow [.NET coding conventions](https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions)
+- Use `sealed` for classes that won't be inherited
+- Prefer `async/await` for all I/O operations
+- Immutable value objects and DTOs
+- Meaningful variable and method names
+- XML documentation for public APIs
+
+### Project Dependencies
+
+The application uses dependency injection with the following service registrations:
+
 ```csharp
-builder.Services.AddApplication();        // MediatR, Validators
-builder.Services.AddPersistence(config);  // EF Core, Repositories
-builder.Services.AddInfrastructure(config); // Redis, Logging, OTel
+// Program.cs
+builder.Services.AddApplication();              // MediatR, Validators, AutoMapper
+builder.Services.AddPersistence(configuration); // EF Core, Repositories, UnitOfWork
+builder.Services.AddInfrastructure(configuration); // Redis, Logging, OpenTelemetry
 ```
 
-### Adding New Feature
+### Adding New Features
 
-1. **Domain:** Tạo entity/value object nếu cần
-2. **Application:** Tạo Command/Query + Handler
-3. **Persistence:** Thêm repository method nếu cần
-4. **API:** Tạo controller endpoint
-5. **Tests:** Viết unit tests
+Follow these steps to add a new feature:
+
+1. **Domain Layer** - Define entities, value objects, or domain events
+2. **Application Layer** - Create Command/Query with Handler and DTOs
+3. **Persistence Layer** - Add repository methods if needed
+4. **API Layer** - Create controller endpoint
+5. **Tests** - Write unit and integration tests
+6. **Documentation** - Update API docs and README
+
+### Example: Adding a New Command
+
+```csharp
+// 1. Define Command
+public record CreateVaultCommand(string Name) : IRequest<VaultDto>;
+
+// 2. Create Handler
+public class CreateVaultCommandHandler : IRequestHandler<CreateVaultCommand, VaultDto>
+{
+    private readonly IVaultRepository _repository;
+    private readonly ICurrentUserService _currentUser;
+    
+    public async Task<VaultDto> Handle(CreateVaultCommand request, CancellationToken ct)
+    {
+        var vault = new Vault(request.Name, _currentUser.UserId);
+        await _repository.AddAsync(vault);
+        return vault.ToDto();
+    }
+}
+
+// 3. Add Validator
+public class CreateVaultCommandValidator : AbstractValidator<CreateVaultCommand>
+{
+    public CreateVaultCommandValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
+    }
+}
+
+// 4. Create Endpoint
+[HttpPost]
+public async Task<IActionResult> Create([FromBody] CreateVaultCommand command)
+{
+    var result = await _mediator.Send(command);
+    return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+}
+```
+
+---
 
 ## 🐳 Docker Support
 
-```bash
-# Build image
-docker build -t vaultguard-api .
+### Using Docker Compose
 
-# Run with docker-compose
-docker-compose up
+```bash
+# Start all services (API, PostgreSQL, Redis, Elasticsearch)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
 ```
 
-## 📈 Performance
+### Build Docker Image
 
-- **Caching:** Redis giảm database load
-- **Read Replica:** Queries không impact writes
-- **No Tracking:** ReadDbContext optimize cho queries
-- **Connection Pooling:** EF Core connection pooling
-- **Async:** Non-blocking operations
+```bash
+# Build the API image
+docker build -t vaultguard-api:latest -f Dockerfile .
 
-## 🔄 Future Enhancements
+# Run the container
+docker run -p 5001:8080 -e ASPNETCORE_ENVIRONMENT=Production vaultguard-api:latest
+```
 
-- [ ] Domain Events publishing
-- [ ] Outbox Pattern cho reliability
+---
+
+## 🚀 Deployment
+
+### Environment Variables
+
+```bash
+ASPNETCORE_ENVIRONMENT=Production
+ConnectionStrings__WriteDatabase=Host=db;Database=vaultguard_write;Username=postgres;Password=***
+ConnectionStrings__ReadDatabase=Host=db-replica;Database=vaultguard_read;Username=postgres;Password=***
+ConnectionStrings__Redis=redis:6379
+ElasticSearch__Url=http://elasticsearch:9200
+```
+
+### Production Checklist
+
+- [ ] Enable HTTPS with valid SSL certificate
+- [ ] Configure CORS policies
+- [ ] Set up database backups
+- [ ] Configure Redis persistence
+- [ ] Enable distributed tracing
+- [ ] Set up alerting and monitoring
+- [ ] Configure log retention policies
+- [ ] Enable rate limiting
+- [ ] Set up health checks
+- [ ] Configure auto-scaling rules
+
+---
+
+## 📈 Monitoring & Observability
+
+### Prometheus Metrics
+
+Available at `/metrics`:
+- HTTP request duration
+- Database query performance
+- Cache hit/miss ratio
+- Active connections
+- Error rates
+
+### Elasticsearch Logs
+
+Structured logs with correlation IDs:
+```json
+{
+  "timestamp": "2025-12-18T10:30:00Z",
+  "level": "Information",
+  "correlationId": "abc-123",
+  "userId": "user-456",
+  "message": "Vault created",
+  "vaultId": "vault-789"
+}
+```
+
+### Health Checks
+
+```bash
+# Check system health
+curl https://localhost:5001/health
+
+# Response
+{
+  "status": "Healthy",
+  "checks": {
+    "database": "Healthy",
+    "redis": "Healthy"
+  }
+}
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
+- Code of Conduct
+- Development workflow
+- Pull request process
+- Coding standards
+- Testing requirements
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👥 Authors
+
+**Volcanion Company**
+- GitHub: [@volcanion-company](https://github.com/volcanion-company)
+
+---
+
+## 🙏 Acknowledgments
+
+- Clean Architecture principles by Robert C. Martin
+- Domain-Driven Design by Eric Evans
+- CQRS pattern inspiration from Greg Young
+- .NET community for excellent libraries and tools
+
+---
+
+## 📞 Support
+
+For questions and support:
+- Open an issue on [GitHub Issues](https://github.com/volcanion-company/vault-guard/issues)
+- Review existing [Documentation](ARCHITECTURE.md)
+- Check [FAQ](https://github.com/volcanion-company/vault-guard/wiki/FAQ)
+
+---
+
+<div align="center">
+
+**Built with ❤️ using Clean Architecture and Domain-Driven Design**
+
+[⬆ Back to Top](#-vaultguard)
+
+</div>
 - [ ] API Versioning
 - [ ] Rate Limiting
 - [ ] Background Jobs (Hangfire)

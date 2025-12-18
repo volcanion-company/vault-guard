@@ -8,6 +8,23 @@ namespace VaultGuard.Domain.Tests.Entities;
 public sealed class VaultItemTests
 {
     [Fact]
+    public void PrivateConstructor_ShouldBeCallableViaReflection()
+    {
+        // Arrange
+        var constructor = typeof(VaultItem).GetConstructor(
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+            null,
+            Type.EmptyTypes,
+            null);
+
+        // Act
+        var vaultItem = constructor?.Invoke(null) as VaultItem;
+
+        // Assert
+        vaultItem.Should().NotBeNull();
+    }
+
+    [Fact]
     public void Create_ShouldCreateVaultItem_WhenValidParametersProvided()
     {
         // Arrange
@@ -121,6 +138,22 @@ public sealed class VaultItemTests
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Update_ShouldThrowInvalidOperationException_WhenItemIsDeleted()
+    {
+        // Arrange
+        var item = CreateDefaultVaultItem();
+        item.Delete();
+        var newPayload = EncryptedData.Create("new_cipher", "new_iv");
+
+        // Act
+        var act = () => item.Update(newPayload);
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*deleted*");
     }
 
     [Fact]
