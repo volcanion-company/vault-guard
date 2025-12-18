@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:17-alpine
+    container_name: vaultguard-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vaultguard
+      POSTGRES_USER: vguser
+      POSTGRES_PASSWORD: U1b01LwWsj67FFqRjEv0Q95K
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/001_database.sql:/docker-entrypoint-initdb.d/001_database.sql
+      - ./scripts/002_user.sql:/docker-entrypoint-initdb.d/002_user.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vguser -d vaultguard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vaultguard-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: vaultguard-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vaultguard-network
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+    container_name: vaultguard-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - vaultguard-network
+
+  # Kibana (Optional - for viewing logs)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.3
+    container_name: vaultguard-kibana
+    restart: unless-stopped
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - vaultguard-network
+
+  # VaultGuard API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vaultguard-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__WriteDatabase=Host=postgres;Port=5432;Database=vaultguard;Username=vguser;Password=U1b01LwWsj67FFqRjEv0Q95K;
+      - ConnectionStrings__ReadDatabase=Host=postgres;Port=5432;Database=vaultguard;Username=vguser;Password=U1b01LwWsj67FFqRjEv0Q95K;
+      - ConnectionStrings__Redis=redis:6379
+      - Elasticsearch__Uri=http://elasticsearch:9200
+      - JwtSettings__SecretKey=HWbaB*cuwNcBfBe32pBNqx2^5#Q+P!2IGkaSaEqXsvCkAEWcZQyAvH%sw8Ry+B+5
+      - JwtSettings__Issuer=VolcanionAuth
+      - JwtSettings__Audience=VolcanionAuthAPI
+      - JwtSettings__AccessTokenExpirationMinutes=30
+      - JwtSettings__RefreshTokenExpirationDays=7
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - vaultguard-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+networks:
+  vaultguard-network:
+    driver: bridge

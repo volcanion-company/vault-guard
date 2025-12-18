@@ -59,7 +59,8 @@ public class JwtAuthenticationMiddleware(
                     context.Items["UserEmail"] = email;
                     context.Items["UserRoles"] = roles;
 
-                    logger.LogDebug("JWT validated: UserId={UserId}, Email={Email}, Roles={Roles}", userId, email, string.Join(",", roles));
+                    // Log at Debug level without PII
+                    logger.LogDebug("JWT validated successfully");
                 }
             }
             catch (SecurityTokenExpiredException)

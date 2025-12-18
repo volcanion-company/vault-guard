@@ -1,23 +1,32 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using VaultGuard.Api.Middleware;
 using VaultGuard.Api.Services;
-using VaultGuard.API.Middleware;
 using VaultGuard.Application;
 using VaultGuard.Application.Common.Interfaces;
 using VaultGuard.Infrastructure;
 using VaultGuard.Persistence;
 
-// Configure Serilog
-VaultGuard.Infrastructure.DependencyInjection.ConfigureSerilog(
-    new ConfigurationBuilder()
-        .AddJsonFile("appsettings.json")
-        .Build(),
-    Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production");
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Use Serilog
-builder.Host.UseSerilog();
+// Use Serilog with environment-aware configuration
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)
+    .WriteTo.Console()
+    .WriteTo.Conditional(
+        evt => !string.IsNullOrEmpty(context.Configuration["Elasticsearch:Uri"]),
+        wt => wt.Elasticsearch(new Serilog.Sinks.Elasticsearch.ElasticsearchSinkOptions(
+            new Uri(context.Configuration["Elasticsearch:Uri"] ?? "http://localhost:9200"))
+        {
+            AutoRegisterTemplate = true,
+            IndexFormat = $"vaultguard-logs-{context.HostingEnvironment.EnvironmentName.ToLower()}-{{0:yyyy.MM.dd}}",
+            NumberOfShards = 2,
+            NumberOfReplicas = 1
+        })
+    ));
 
 // Add services to the container
 builder.Services.AddControllers();
@@ -40,10 +49,61 @@ builder.Services.AddInfrastructure(builder.Configuration);
 // Add CurrentUserService (bridges HttpContext to Application layer)
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+// Configure JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
+var issuer = jwtSettings["Issuer"];
+var audience = jwtSettings["Audience"];
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ValidateIssuer = !string.IsNullOrEmpty(issuer),
+            ValidIssuer = issuer,
+            ValidateAudience = !string.IsNullOrEmpty(audience),
+            ValidAudience = audience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// Configure CORS
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+if (allowedOrigins.Length > 0)
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowConfiguredOrigins", policy =>
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        });
+    });
+}
+
 // Add Health Checks
-builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("WriteDatabase")!)
-    .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
+var writeDbConnection = builder.Configuration.GetConnectionString("WriteDatabase");
+var redisConnection = builder.Configuration.GetConnectionString("Redis");
+
+if (!string.IsNullOrEmpty(writeDbConnection) && !string.IsNullOrEmpty(redisConnection))
+{
+    builder.Services.AddHealthChecks()
+        .AddNpgSql(writeDbConnection)
+        .AddRedis(redisConnection);
+}
+else if (builder.Environment.IsDevelopment())
+{
+    // In development, add basic health check even if connections not configured
+    builder.Services.AddHealthChecks();
+}
 
 var app = builder.Build();
 
@@ -56,19 +116,27 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Apply CORS if configured
+if (allowedOrigins.Length > 0)
+{
+    app.UseCors("AllowConfiguredOrigins");
+}
+
 // Serilog request logging
 app.UseSerilogRequestLogging();
-
-// Auth middleware (provided by Auth Service)
-app.UseMiddleware<JwtAuthenticationMiddleware>();
 
 // Request logging middleware
 app.UseMiddleware<RequestLoggingMiddleware>();
 
+// Authentication and Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
-// Health checks endpoint
-app.MapHealthChecks("/health");
+// Health checks endpoint (if configured)
+if (builder.Services.Any(s => s.ServiceType == typeof(Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckService)))
+{
+    app.MapHealthChecks("/health");
+}
 
 app.MapControllers();
 

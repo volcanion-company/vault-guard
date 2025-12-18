@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace VaultGuard.API.Middleware;
+namespace VaultGuard.Api.Middleware;
 
 /// <summary>
 /// Middleware that logs HTTP request and response details, including request method, path, status code, duration, and
@@ -36,13 +36,12 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
 
         try
         {
-            // Extract user information from HttpContext.Items if available
-            var userId = context.Items["UserId"]?.ToString() ?? "Anonymous";
-            // Extract user email if available
-            var userEmail = context.Items["UserEmail"]?.ToString() ?? "N/A";
-            // Log request start information
+            // Log request start information (PII removed for compliance)
             if (logger.IsEnabled(LogLevel.Information))
-                logger.LogInformation("HTTP {Method} {Path} started - RequestId={RequestId}, UserId={UserId}, Email={Email}", context.Request.Method, context.Request.Path, requestId, userId, userEmail);
+                logger.LogInformation("HTTP {Method} {Path} started - RequestId={RequestId}", 
+                    context.Request.Method, 
+                    context.Request.Path, 
+                    requestId);
 
             // Invoke the next middleware in the pipeline
             await next(context);
