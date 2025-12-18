@@ -42,17 +42,24 @@ public static class DependencyInjection
 
     public static void ConfigureSerilog(IConfiguration configuration, string environment)
     {
-        Log.Logger = new LoggerConfiguration()
+        var loggerConfig = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
             .Enrich.WithProperty("Environment", environment)
-            .WriteTo.Console()
-            .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(configuration["Elasticsearch:Uri"]!))
+            .WriteTo.Console();
+
+        // Only add Elasticsearch sink if configured
+        var elasticsearchUri = configuration["Elasticsearch:Uri"];
+        if (!string.IsNullOrEmpty(elasticsearchUri))
+        {
+            loggerConfig.WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri(elasticsearchUri))
             {
                 AutoRegisterTemplate = true,
                 IndexFormat = $"vaultguard-logs-{environment.ToLower()}-{{0:yyyy.MM.dd}}",
                 NumberOfShards = 2,
                 NumberOfReplicas = 1
-            })
-            .CreateLogger();
+            });
+        }
+
+        Log.Logger = loggerConfig.CreateLogger();
     }
 }

@@ -15,7 +15,8 @@ namespace VaultGuard.Api.Middleware;
 /// <param name="next">The next middleware delegate in the HTTP request pipeline. This delegate is invoked to continue processing the
 /// request.</param>
 /// <param name="logger">The logger used to record unhandled exceptions and related error information.</param>
-public class GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlingMiddleware> logger)
+/// <param name="environment">The hosting environment to determine if running in production.</param>
+public class GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlingMiddleware> logger, IHostEnvironment environment)
 {
     /// <summary>
     /// Processes an HTTP request and handles any unhandled exceptions that occur during the request pipeline.
@@ -37,7 +38,7 @@ public class GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger<Glo
             // Log the exception
             logger.LogError(ex, "An unhandled exception occurred");
             // Handle the exception and generate an appropriate response
-            await HandleExceptionAsync(context, ex);
+            await HandleExceptionAsync(context, ex, environment);
         }
     }
 
@@ -48,11 +49,12 @@ public class GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger<Glo
     /// <remarks>The response content type is set to "application/json". The status code and response body are
     /// determined based on the type of exception provided. For known exception types such as NotFoundException and
     /// ValidationException, specific status codes and messages are returned. For all other exceptions, a generic
-    /// internal server error response is generated.</remarks>
+    /// internal server error response is generated. In production, internal error details are hidden.</remarks>
     /// <param name="context">The HTTP context for the current request. The response will be written to this context.</param>
     /// <param name="exception">The exception to handle. Determines the status code and error details included in the response.</param>
+    /// <param name="environment">The hosting environment to determine if running in production.</param>
     /// <returns>A task that represents the asynchronous operation of writing the error response.</returns>
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private static async Task HandleExceptionAsync(HttpContext context, Exception exception, IHostEnvironment environment)
     {
         // Set the response content type to JSON
         context.Response.ContentType = "application/json";
@@ -84,7 +86,9 @@ public class GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger<Glo
             {
                 statusCode = (int)HttpStatusCode.InternalServerError,
                 message = "An error occurred while processing your request.",
-                details = (object)exception.Message
+                // Hide internal details in production
+                details = environment.IsProduction() ? (object?)null : exception.Message,
+                requestId = context.Items["RequestId"]?.ToString()
             }
         };
         // Set the appropriate status code
