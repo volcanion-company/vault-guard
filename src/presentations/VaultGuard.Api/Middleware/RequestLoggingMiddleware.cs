@@ -41,13 +41,8 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
             // Extract user email if available
             var userEmail = context.Items["UserEmail"]?.ToString() ?? "N/A";
             // Log request start information
-            logger.LogInformation(
-                "HTTP {Method} {Path} started - RequestId={RequestId}, UserId={UserId}, Email={Email}",
-                context.Request.Method,
-                context.Request.Path,
-                requestId,
-                userId,
-                userEmail);
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("HTTP {Method} {Path} started - RequestId={RequestId}, UserId={UserId}, Email={Email}", context.Request.Method, context.Request.Path, requestId, userId, userEmail);
 
             // Invoke the next middleware in the pipeline
             await next(context);
@@ -71,13 +66,8 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
             stopwatch.Stop();
 
             // Log error information
-            logger.LogError(
-                ex,
-                "HTTP {Method} {Path} failed - Duration={Duration}ms, RequestId={RequestId}",
-                context.Request.Method,
-                context.Request.Path,
-                stopwatch.ElapsedMilliseconds,
-                requestId);
+            if (logger.IsEnabled(LogLevel.Error))
+                logger.LogError(ex, "HTTP {Method} {Path} failed - Duration={Duration}ms, RequestId={RequestId}", context.Request.Method, context.Request.Path, stopwatch.ElapsedMilliseconds, requestId);
 
             // Rethrow the exception to propagate it up the pipeline
             throw;
