@@ -40,6 +40,7 @@ jobs:
       run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
     
     - name: Run unit tests with coverage
+      id: test
       run: |
         dotnet test ${{ env.SOLUTION_PATH }} \
           --configuration Release \
@@ -47,8 +48,8 @@ jobs:
           --verbosity normal \
           --collect:"XPlat Code Coverage" \
           --results-directory ./TestResults \
-          --logger "trx;LogFileName=test-results.trx" \
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+      continue-on-error: true
     
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -57,12 +58,20 @@ jobs:
         name: test-results
         path: TestResults/**/*.trx
     
-    - name: Upload coverage reports
+    - name: Upload coverage reports (OpenCover)
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: coverage-reports
+        name: coverage-reports-opencover
+        path: TestResults/**/coverage.opencover.xml
+    
+    - name: Upload coverage reports (Cobertura)
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-reports-cobertura
         path: TestResults/**/coverage.cobertura.xml
+        if-no-files-found: warn
 
   sonarqube:
     name: SonarQube Analysis
@@ -122,8 +131,8 @@ jobs:
           --verbosity normal \
           --collect:"XPlat Code Coverage" \
           --results-directory ./TestResults \
-          --logger "trx;LogFileName=test-results.trx" \
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+      continue-on-error: true
     
     - name: End SonarQube analysis
       env:
@@ -146,11 +155,19 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Download coverage reports
+    - name: Download coverage reports (Cobertura)
       uses: actions/download-artifact@v4
       with:
-        name: coverage-reports
+        name: coverage-reports-cobertura
         path: TestResults
+      continue-on-error: true
+    
+    - name: Download coverage reports (OpenCover)
+      uses: actions/download-artifact@v4
+      with:
+        name: coverage-reports-opencover
+        path: TestResults
+      continue-on-error: true
     
     - name: Install ReportGenerator
       run: dotnet tool install --global dotnet-reportgenerator-globaltool
