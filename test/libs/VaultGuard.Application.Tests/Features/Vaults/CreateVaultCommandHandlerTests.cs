@@ -148,4 +148,102 @@ public sealed class CreateVaultCommandHandlerTests
             Times.Once,
             "Cache should be invalidated after vault creation");
     }
+
+    [Fact]
+    public async Task Handle_ShouldLogInformation_WhenLogLevelEnabled()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var command = new CreateVaultCommand
+        {
+            Name = "Test Vault",
+            EncryptedVaultKeyCipherText = "cipher",
+            EncryptedVaultKeyIV = "iv"
+        };
+
+        _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
+        _currentUserServiceMock.Setup(x => x.IpAddress).Returns("127.0.0.1");
+        _currentUserServiceMock.Setup(x => x.UserAgent).Returns("Test Agent");
+
+        _vaultRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Vault>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Vault v, CancellationToken ct) => v);
+
+        _auditLogRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<AuditLog>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AuditLog a, CancellationToken ct) => a);
+
+        _loggerMock
+            .Setup(x => x.IsEnabled(LogLevel.Information))
+            .Returns(true);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Creating vault for user {userId}")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("created successfully")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldNotLogInformation_WhenLogLevelDisabled()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var command = new CreateVaultCommand
+        {
+            Name = "Test Vault",
+            EncryptedVaultKeyCipherText = "cipher",
+            EncryptedVaultKeyIV = "iv"
+        };
+
+        _currentUserServiceMock.Setup(x => x.UserId).Returns(userId);
+        _currentUserServiceMock.Setup(x => x.IpAddress).Returns("127.0.0.1");
+        _currentUserServiceMock.Setup(x => x.UserAgent).Returns("Test Agent");
+
+        _vaultRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<Vault>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Vault v, CancellationToken ct) => v);
+
+        _auditLogRepositoryMock
+            .Setup(x => x.AddAsync(It.IsAny<AuditLog>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AuditLog a, CancellationToken ct) => a);
+
+        _loggerMock
+            .Setup(x => x.IsEnabled(LogLevel.Information))
+            .Returns(false);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _loggerMock.Verify(
+            x => x.IsEnabled(LogLevel.Information),
+            Times.Once);
+
+        // Verify the conditional log is NOT called when IsEnabled returns false
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Creating vault for user {userId}")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Never);
+    }
 }
