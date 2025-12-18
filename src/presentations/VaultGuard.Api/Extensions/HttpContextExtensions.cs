@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace VaultGuard.API.Extensions;
+namespace VaultGuard.Api.Extensions;
 
 /// <summary>
 /// Provides extension methods for <see cref="HttpContext"/> to simplify access to user information, request metadata,
