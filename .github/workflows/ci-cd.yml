@@ -84,6 +84,17 @@ jobs:
       with:
         fetch-depth: 0  # Disable shallow clone for better analysis
     
+    - name: Validate SonarQube secrets
+      run: |
+        if [ -z "${{ secrets.SONAR_TOKEN }}" ] || [ -z "${{ secrets.SONAR_HOST_URL }}" ] || [ -z "${{ secrets.SONAR_PROJECT_KEY }}" ]; then
+          echo "::error::SonarQube secrets are not configured properly"
+          echo "::error::Please configure the following secrets in your repository:"
+          echo "::error::- SONAR_TOKEN: Your SonarQube authentication token"
+          echo "::error::- SONAR_HOST_URL: Your SonarQube server URL (e.g., https://sonarcloud.io)"
+          echo "::error::- SONAR_PROJECT_KEY: Your SonarQube project key"
+          exit 1
+        fi
+    
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
